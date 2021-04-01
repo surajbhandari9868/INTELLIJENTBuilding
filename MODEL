@@ -1,0 +1,53 @@
+import pandas as pd
+import numpy as np
+from datetime import datetime
+from sklearn.neighbors import KNeighborsClassifier 
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from mlxtend.plotting import plot_decision_regions
+import matplotlib.pyplot  as plt
+from sklearn.neighbors import KNeighborsClassifier
+
+
+def generateData(id, status, nor, temps, times, offset=0):
+    did=np.full(nor,id,dtype=int)
+    status=np.full(nor, status, dtype=int)
+    temperature=np.random.uniform(temps[0], temps[1],nor) 
+    temperature=np.around(temperature,1)
+    locationRadius=np.random.uniform(0,1,nor)
+    timeStamp=np.random.uniform(times[0], times[1], nor)
+    timeStamp=np.around(timeStamp,decimals=1)
+    sn=[offset+i for i in range(0,nor)]
+    df=pd.DataFrame((did, temperature,locationRadius,timeStamp, status))
+    df=df.T
+    df.columns=['Did', 'Temperature','Location','TimeStamp','Status']
+    df.index=sn
+    return df
+
+lightdata_size= 100000  # will generate data 5 times
+acdata_size=int(lightdata_size/2)
+d1 = generateData(1, 1, lightdata_size, [10, 40], [13, 15]) #light
+d1ex1=generateData(1, 0, lightdata_size, [0, 9], [0,12], lightdata_size)
+d1ex2=generateData(1, 0, lightdata_size, [41, 60], [16,23], lightdata_size * 2)
+
+
+d2 = generateData(2, 1, acdata_size, [34, 58], [0, 4], lightdata_size * 3) # AC
+d2ex1 = generateData(2, 0, acdata_size, [0,33], [5, 23], lightdata_size * 4) # AC
+d2ex2 = generateData(2, 0, acdata_size, [59, 60], [5, 23], lightdata_size * 5) # AC
+
+d3 = [d1,d1ex1, d1ex2, d2, d2ex1, d2ex2]
+df = pd.concat(d3)
+#df = df.sample(frac = 1) sampling is done below at the time of splittng
+#df.head(10)
+
+X=df.loc[:,['Did', 'Temperature', 'Location', 'TimeStamp']].values
+y=df['Status'].values
+X_train, X_test, y_train, y_test=train_test_split(X,y,shuffle=True)
+
+knc=KNeighborsClassifier()
+knc.fit(X_train,y_train)
+
+predTrain=knc.predict(X_train)
+predTest=knc.predict(X_test)
+print("Training Accuracy is : ",accuracy_score(y_train,predTrain))
+print("Testing Accuracy is : ",accuracy_score(y_test,predTest))
